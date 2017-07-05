@@ -87,8 +87,3 @@ ENV/
 
 # Rope project settings
 .ropeproject
-
-# Wynbot config file, message databases used during testing
-wynbot.ini
-hangouts.json
-message_db.json
