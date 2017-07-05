@@ -7,19 +7,14 @@ import datetime as dt
 import json
 import logging
 import os.path
-from argparse import ArgumentParser
 from configparser import ConfigParser
 from html.parser import HTMLParser
-from sys import path
 # Third party imports
 import click
 import requests
 # Custom imports
 from google_auth import GoogleAuth
 from hangoutsclient import HangoutsClient
-
-# Get absolute path of the dir script is run from
-CWD = path[0]  # pylint: disable=C0103
 
 
 class LinkParser(HTMLParser):
@@ -48,13 +43,14 @@ def validate_time(ctx, param, time_str):
 
 
 @click.command()
+@click.option('--config_path', '-c', default=os.path.expanduser('~/.config/hangouts_linkgrabber'), type=click.Path(exists=True), help='path to directory containing config file.')
 @click.option('--after', '-a', default='0830',
               callback=validate_time, expose_value=True,
               help='"after" time in hhmm format. Default 0830.')
 @click.option('--before', '-b', default='1730',
               callback=validate_time, expose_value=True,
               help='"before" time in hhmm format. Default 1730.')
-def main(before, after):
+def main(config_path, before, after):
     """
     Catch up on links sent during the day from a specified Hangouts contact.
     Hangouts messages are parsed through Gmail API.
@@ -62,20 +58,21 @@ def main(before, after):
     OAuth for devices doesn't support Hangouts or Gmail scopes, so have to send auth link through the terminal.
     https://developers.google.com/identity/protocols/OAuth2ForDevices
     """
+    configure_logging(config_path)
 
     # Path to config file
-    config_path = os.path.join(CWD, 'linkgrabber.ini')
-    logging.debug('Using config file: %s', config_path)
+    config_file = os.path.join(config_path, 'linkgrabber.ini')
+    logging.debug('Using config file: %s', config_file)
 
     # Read in config values
     config = ConfigParser()
-    config.read(config_path)
+    config.read(config_file)
     chat_partner = config.get('Settings', 'chat_partner')  # Name or email of the chat partner to search chat logs for
 
     # Setup Google OAUTH instance for accessing Gmail
     oauth2_scope = ('https://www.googleapis.com/auth/gmail.readonly '
                     'https://www.googleapis.com/auth/userinfo.email')
-    oauth = GoogleAuth(config_path, oauth2_scope, service='Gmail')
+    oauth = GoogleAuth(config_file, oauth2_scope, service='Gmail')
     oauth.google_authenticate()
 
     # Get email address so we can filter out messages sent by user later on
@@ -126,7 +123,7 @@ def main(before, after):
     if links:
         message = 'Links from today:\n' + ' \n'.join(links)
         # Setup Hangouts bot instance, connect and send message.
-        hangouts = HangoutsClient(config_path, message)
+        hangouts = HangoutsClient(config_file, message)
         if hangouts.connect(address=('talk.google.com', 5222),
                             reattempt=True, use_tls=True):
             hangouts.process(block=True)
@@ -137,12 +134,19 @@ def main(before, after):
         logging.info('No new links!')
 
 
-def configure_logging():
+def configure_logging(config_path):
     # Configure root logger. Level 5 = verbose to catch mostly everything.
     logger = logging.getLogger()
     logger.setLevel(level=5)
+
+    log_folder = os.path.join(config_path, 'logs')
+    if not os.path.exists(log_folder):
+        os.makedirs(log_folder, exist_ok=True)
+
     log_filename = 'linkgrabber_{0}.log'.format(dt.datetime.now().strftime('%Y%m%d_%Hh%Mm%Ss'))
-    log_handler = logging.FileHandler(os.path.join(CWD, 'logs', log_filename))
+    log_filepath = os.path.join(log_folder, log_filename)
+    log_handler = logging.FileHandler(log_filepath)
+
     log_format = logging.Formatter(
         fmt='%(asctime)s.%(msecs).03d %(name)-12s %(levelname)-8s %(message)s (%(filename)s:%(lineno)d)',
         datefmt='%Y-%m-%d %H:%M:%S')
@@ -155,5 +159,4 @@ def configure_logging():
 
 
 if __name__ == '__main__':
-    configure_logging()
     main()
