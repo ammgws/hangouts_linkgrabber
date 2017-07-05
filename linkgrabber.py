@@ -78,7 +78,7 @@ def main(config_path, before, after):
     # Get email address so we can filter out messages sent by user later on
     user = oauth.google_get_email()
 
-    # Retrieves all Hangouts chat messages received during 8.30AM and 17.30PM on the current day
+    # Retrieves all Hangouts chat messages received between 'before_time' and 'after_time' on the current day
     logging.debug('Getting emails for: %s', user)
     current_date = dt.datetime.today()
     before_timestamp = int(current_date.replace(hour=before.hour, minute=before.minute).timestamp())
