@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Imports from Python Standard Library
+# Standard library
 import base64
 import datetime as dt
 import json
@@ -21,13 +21,13 @@ class LinkParser(HTMLParser):
     def __init__(self):
         HTMLParser.__init__(self)
         self.link = []
-        self.lasttag = None
+        self.last_tag = None
 
     def handle_starttag(self, tag, attr):
-        self.lasttag = tag.lower()
+        self.last_tag = tag.lower()
 
     def handle_data(self, data):
-        if self.lasttag == "a" and data.strip():
+        if self.last_tag == "a" and data.strip():
             self.link = data
 
     def error(self, message):
