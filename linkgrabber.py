@@ -9,6 +9,7 @@ import logging
 import os.path
 from configparser import ConfigParser
 from html.parser import HTMLParser
+from time import sleep
 # Third party imports
 import click
 import requests
@@ -122,11 +123,14 @@ def main(config_path, before, after):
 
     if links:
         message = 'Links from today:\n' + ' \n'.join(links)
-        # Setup Hangouts bot instance, connect and send message.
-        hangouts = HangoutsClient(config_file, message)
+        # Setup Hangouts bot instance, connect and send message
+        hangouts = HangoutsClient(config_file)
         if hangouts.connect(address=('talk.google.com', 5222),
                             reattempt=True, use_tls=True):
-            hangouts.process(block=True)
+            hangouts.process(block=False)
+            sleep(5)  # need time for Hangouts roster to update
+            hangouts.send_to_all(message)
+            hangouts.disconnect(wait=True)
             logging.info("Finished sending message")
         else:
             logging.error('Unable to connect to Hangouts.')
