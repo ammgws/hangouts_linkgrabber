@@ -74,10 +74,10 @@ def main(config_path, before, after):
     oauth2_scope = ('https://www.googleapis.com/auth/gmail.readonly '
                     'https://www.googleapis.com/auth/userinfo.email')
     oauth = GoogleAuth(config_file, oauth2_scope, service='Gmail')
-    oauth.google_authenticate()
+    oauth.authenticate()
 
     # Get email address so we can filter out messages sent by user later on
-    user = oauth.google_get_email()
+    user = oauth.get_email()
 
     # Retrieves all Hangouts chat messages received between 'before_time' and 'after_time' on the current day
     logging.debug('Getting emails for: %s', user)
