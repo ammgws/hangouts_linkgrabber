@@ -9,6 +9,7 @@ import logging
 import os.path
 from configparser import ConfigParser
 from html.parser import HTMLParser
+from pathlib import Path
 from time import sleep
 # Third party imports
 import click
@@ -16,6 +17,9 @@ import requests
 # Custom imports
 from google_auth import GoogleAuth
 from hangoutsclient import HangoutsClient
+
+
+APP_NAME = 'hangouts_linkgrabber'
 
 
 class LinkParser(HTMLParser):
@@ -43,9 +47,28 @@ def validate_time(ctx, param, time_str):
     return time
 
 
+def create_dir(ctx, param, directory):
+    if not os.path.isdir(directory):
+        os.makedirs(directory, exist_ok=True)
+    return directory
+
+
 @click.command()
-@click.option('--config_path', '-c', default=os.path.expanduser('~/.config/hangouts_linkgrabber'), type=click.Path(exists=True), help='path to directory containing config file.')
 @click.option('--after', '-a', default='0830',
+@click.option(
+    '--config-path',
+    type=click.Path(),
+    default=os.path.join(os.environ.get('XDG_CONFIG_HOME', os.path.expanduser('~/.config')), APP_NAME),
+    callback=create_dir,
+    help='Path to directory containing config file. Defaults to XDG config dir.',
+)
+@click.option(
+    '--cache-path',
+    type=click.Path(),
+    default=os.path.join(os.environ.get('XDG_CACHE_HOME', os.path.expanduser('~/.cache')), APP_NAME),
+    callback=create_dir,
+    help='Path to directory to store logs and such. Defaults to XDG cache dir.',
+)
               callback=validate_time, expose_value=True,
               help='"after" time in hhmm format. Default 0830.')
 @click.option('--before', '-b', default='1730',
@@ -59,9 +82,8 @@ def main(config_path, before, after):
     OAuth for devices doesn't support Hangouts or Gmail scopes, so have to send auth link through the terminal.
     https://developers.google.com/identity/protocols/OAuth2ForDevices
     """
-    configure_logging(config_path)
+    configure_logging(cache_path)
 
-    # Path to config file
     config_file = os.path.join(config_path, 'linkgrabber.ini')
     logging.debug('Using config file: %s', config_file)
 
@@ -69,11 +91,23 @@ def main(config_path, before, after):
     config = ConfigParser()
     config.read(config_file)
     chat_partner = config.get('Settings', 'chat_partner')  # Name or email of the chat partner to search chat logs for
+    gmail_client_id = config.get('Gmail', 'client_id')
+    gmail_client_secret = config.get('Gmail', 'client_secret')
+    gmail_refresh_token = os.path.join(cache_path, 'gmail_refresh_token')
+    if not os.path.isfile(gmail_refresh_token):
+        Path(gmail_refresh_token).touch()
+    hangouts_client_id = config.get('Hangouts', 'client_id')
+    hangouts_client_secret = config.get('Hangouts', 'client_secret')
+    hangouts_refresh_token = os.path.join(cache_path, 'hangouts_refresh_token')
+    if not os.path.isfile(hangouts_refresh_token):
+        Path(hangouts_refresh_token).touch()
 
-    # Setup Google OAUTH instance for accessing Gmail
-    oauth2_scope = ('https://www.googleapis.com/auth/gmail.readonly '
-                    'https://www.googleapis.com/auth/userinfo.email')
-    oauth = GoogleAuth(config_file, oauth2_scope, service='Gmail')
+    # Setup Google OAUTH instance for acccessing Gmail.
+    gmail_scopes = [
+        'https://www.googleapis.com/auth/gmail.readonly',
+        'https://www.googleapis.com/auth/userinfo.email',
+    ]
+    oauth = GoogleAuth(gmail_client_id, gmail_client_secret, gmail_scopes, gmail_refresh_token)
     oauth.authenticate()
 
     # Get email address so we can filter out messages sent by user later on
@@ -124,7 +158,7 @@ def main(config_path, before, after):
     if links:
         message = 'Links from today:\n' + ' \n'.join(links)
         # Setup Hangouts bot instance, connect and send message
-        hangouts = HangoutsClient(config_file)
+        hangouts = HangoutsClient(hangouts_client_id, hangouts_client_secret, hangouts_refresh_token)
         if hangouts.connect():
             hangouts.process(block=False)
             sleep(5)  # need time for Hangouts roster to update
@@ -137,12 +171,12 @@ def main(config_path, before, after):
         logging.info('No new links!')
 
 
-def configure_logging(config_path):
+def configure_logging(log_dir):
     # Configure root logger. Level 5 = verbose to catch mostly everything.
     logger = logging.getLogger()
     logger.setLevel(level=5)
 
-    log_folder = os.path.join(config_path, 'logs')
+    log_folder = os.path.join(log_dir, 'logs')
     if not os.path.exists(log_folder):
         os.makedirs(log_folder, exist_ok=True)
 
