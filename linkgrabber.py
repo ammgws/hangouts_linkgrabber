@@ -11,10 +11,9 @@ from configparser import ConfigParser
 from html.parser import HTMLParser
 from pathlib import Path
 from time import sleep
-# Third party imports
+# Third party
 import click
 import requests
-# Custom imports
 from google_auth import GoogleAuth
 from hangoutsclient import HangoutsClient
 
@@ -32,7 +31,7 @@ class LinkParser(HTMLParser):
         self.last_tag = tag.lower()
 
     def handle_data(self, data):
-        if self.last_tag == "a" and data.strip():
+        if self.last_tag == 'a' and data.strip():
             self.link = data
 
     def error(self, message):
@@ -41,7 +40,7 @@ class LinkParser(HTMLParser):
 
 def validate_time(ctx, param, time_str):
     try:
-        time = dt.datetime.strptime(time_str, "%H%M")
+        time = dt.datetime.strptime(time_str, '%H%M')
     except ValueError:
         raise click.BadParameter('Time should be in HHMM format')
     return time
@@ -54,7 +53,6 @@ def create_dir(ctx, param, directory):
 
 
 @click.command()
-@click.option('--after', '-a', default='0830',
 @click.option(
     '--config-path',
     type=click.Path(),
@@ -69,14 +67,16 @@ def create_dir(ctx, param, directory):
     callback=create_dir,
     help='Path to directory to store logs and such. Defaults to XDG cache dir.',
 )
+@click.option('--after', '-a',
+              default='0830',
               callback=validate_time, expose_value=True,
               help='"after" time in hhmm format. Default 0830.')
-@click.option('--before', '-b', default='1730',
+@click.option('--before', '-b',
+              default='1730',
               callback=validate_time, expose_value=True,
               help='"before" time in hhmm format. Default 1730.')
-def main(config_path, before, after):
-    """
-    Catch up on links sent during the day from a specified Hangouts contact.
+def main(config_path, cache_path, before, after):
+    """Catch up on links sent during the day from a specified Hangouts contact.
     Hangouts messages are parsed through Gmail API.
 
     OAuth for devices doesn't support Hangouts or Gmail scopes, so have to send auth link through the terminal.
@@ -85,9 +85,7 @@ def main(config_path, before, after):
     configure_logging(cache_path)
 
     config_file = os.path.join(config_path, 'linkgrabber.ini')
-    logging.debug('Using config file: %s', config_file)
-
-    # Read in config values
+    logging.debug('Using config file: %s.', config_file)
     config = ConfigParser()
     config.read(config_file)
     chat_partner = config.get('Settings', 'chat_partner')  # Name or email of the chat partner to search chat logs for
@@ -121,7 +119,7 @@ def main(config_path, before, after):
     request_url = 'https://www.googleapis.com/gmail/v1/users/me/messages?q="after:{0} before:{1} from:{2}"'.format(
         after_timestamp, before_timestamp, chat_partner)
     logging.debug('URL for chat log search: %s', request_url)
-    authorization_header = {"Authorization": "OAuth %s" % oauth.access_token}
+    authorization_header = {'Authorization': 'OAuth %s' % oauth.access_token}
     resp = requests.get(request_url, headers=authorization_header)
     logging.debug('Authorisation result: %s', resp.status_code)
     data = resp.json()
@@ -132,7 +130,7 @@ def main(config_path, before, after):
     if 'messages' in data:
         for message in data['messages']:
             request_url = 'https://www.googleapis.com/gmail/v1/users/me/messages/{0}?'.format(message['id'])
-            authorization_header = {"Authorization": "OAuth %s" % oauth.access_token}
+            authorization_header = {'Authorization': 'OAuth %s' % oauth.access_token}
             resp = requests.get(request_url, headers=authorization_header)  # get message data
             logging.debug('Message query result: %s', resp.status_code)
 
@@ -141,7 +139,7 @@ def main(config_path, before, after):
                 sender = data['payload']['headers'][0]['value']
                 # Since the gmail API doesn't appear to support the 'in:chats/is:chat' query anymore,
                 # we end up pulling both emails and chat messages, but the data structures are different so
-                # wrapping this in a try-except as a quick-and-dirty fix to ignore all email messages
+                # wrapping this in a try-except as a quick-and-dirty fix to ignore all email messages.
                 try:
                     decoded_raw_text = base64.urlsafe_b64decode(data['payload']['body']['data']).decode('utf-8')
                 except KeyError:
@@ -164,7 +162,7 @@ def main(config_path, before, after):
             sleep(5)  # need time for Hangouts roster to update
             hangouts.send_to_all(message)
             hangouts.disconnect(wait=True)
-            logging.info("Finished sending message")
+            logging.info('Finished sending message')
         else:
             logging.error('Unable to connect to Hangouts.')
     else:
@@ -186,7 +184,8 @@ def configure_logging(log_dir):
 
     log_format = logging.Formatter(
         fmt='%(asctime)s.%(msecs).03d %(name)-12s %(levelname)-8s %(message)s (%(filename)s:%(lineno)d)',
-        datefmt='%Y-%m-%d %H:%M:%S')
+        datefmt='%Y-%m-%d %H:%M:%S'
+    )
     log_handler.setFormatter(log_format)
     logger.addHandler(log_handler)
     # Lower requests module's log level so that OAUTH2 details aren't logged
