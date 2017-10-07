@@ -67,14 +67,18 @@ def create_dir(ctx, param, directory):
     callback=create_dir,
     help='Path to directory to store logs and such. Defaults to XDG cache dir.',
 )
-@click.option('--after', '-a',
-              default='0830',
-              callback=validate_time, expose_value=True,
-              help='"after" time in hhmm format. Default 0830.')
-@click.option('--before', '-b',
-              default='1730',
-              callback=validate_time, expose_value=True,
-              help='"before" time in hhmm format. Default 1730.')
+@click.option(
+    '--after', '-a',
+    default='0830',
+    callback=validate_time, expose_value=True,
+    help='"after" time in hhmm format. Default 0830.',
+)
+@click.option(
+    '--before', '-b',
+    default='1730',
+    callback=validate_time, expose_value=True,
+    help='"before" time in hhmm format. Default 1730.',
+)
 def main(config_path, cache_path, before, after):
     """Catch up on links sent during the day from a specified Hangouts contact.
     Hangouts messages are parsed through Gmail API.
