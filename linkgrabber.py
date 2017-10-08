@@ -41,9 +41,9 @@ class LinkParser(HTMLParser):
 def validate_time(ctx, param, time_str):
     try:
         time = dt.datetime.strptime(time_str, '%H%M')
+        return time
     except ValueError:
         raise click.BadParameter('Time should be in HHMM format')
-    return time
 
 
 def create_dir(ctx, param, directory):
