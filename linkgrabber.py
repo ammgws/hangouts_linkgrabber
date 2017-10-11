@@ -147,7 +147,7 @@ def main(config_path, cache_path, before, after):
                 except KeyError:
                     break
 
-                # ignore messages sent by us, we only want links that chat partner has sent
+                # Ignore messages sent by us; we only want links that chat partner has sent.
                 if user not in sender and 'href' in decoded_raw_text:
                     parser.feed(decoded_raw_text)
                     link = parser.link
