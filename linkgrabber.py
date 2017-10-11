@@ -95,21 +95,22 @@ def main(config_path, cache_path, before, after):
     chat_partner = config.get('Settings', 'chat_partner')  # Name or email of the chat partner to search chat logs for
     gmail_client_id = config.get('Gmail', 'client_id')
     gmail_client_secret = config.get('Gmail', 'client_secret')
-    gmail_refresh_token = os.path.join(cache_path, 'gmail_refresh_token')
-    if not os.path.isfile(gmail_refresh_token):
-        Path(gmail_refresh_token).touch()
+    gmail_token_file = os.path.join(cache_path, 'gmail_cached_token')
+    if not os.path.isfile(gmail_token_file):
+        Path(gmail_token_file).touch()
+
     hangouts_client_id = config.get('Hangouts', 'client_id')
     hangouts_client_secret = config.get('Hangouts', 'client_secret')
-    hangouts_refresh_token = os.path.join(cache_path, 'hangouts_refresh_token')
-    if not os.path.isfile(hangouts_refresh_token):
-        Path(hangouts_refresh_token).touch()
+    hangouts_token_file = os.path.join(cache_path, 'hangouts_cached_token')
+    if not os.path.isfile(hangouts_token_file):
+        Path(hangouts_token_file).touch()
 
     # Setup Google OAUTH instance for acccessing Gmail.
     gmail_scopes = [
         'https://www.googleapis.com/auth/gmail.readonly',
         'https://www.googleapis.com/auth/userinfo.email',
     ]
-    oauth = GoogleAuth(gmail_client_id, gmail_client_secret, gmail_scopes, gmail_refresh_token)
+    oauth = GoogleAuth(gmail_client_id, gmail_client_secret, gmail_scopes, gmail_token_file)
     oauth.authenticate()
 
     # Get email address so we can filter out messages sent by user later on
@@ -159,8 +160,8 @@ def main(config_path, cache_path, before, after):
 
     if links:
         message = 'Links from today:\n' + ' \n'.join(links)
-        # Setup Hangouts bot instance, connect and send message
-        hangouts = HangoutsClient(hangouts_client_id, hangouts_client_secret, hangouts_refresh_token)
+
+        hangouts = HangoutsClient(hangouts_client_id, hangouts_client_secret, hangouts_token_file)
         if hangouts.connect():
             hangouts.process(block=False)
             sleep(5)  # need time for Hangouts roster to update
