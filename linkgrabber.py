@@ -123,10 +123,8 @@ def main(config_path, cache_path, before, after):
     after_timestamp = int(current_date.replace(hour=after.hour, minute=after.minute).timestamp())
     request_url = 'https://www.googleapis.com/gmail/v1/users/me/messages?q="after:{0} before:{1} from:{2}"'.format(
         after_timestamp, before_timestamp, chat_partner)
-    logging.debug('URL for chat log search: %s', request_url)
     authorization_header = {'Authorization': 'OAuth %s' % oauth.access_token}
     resp = requests.get(request_url, headers=authorization_header)
-    logging.debug('Authorisation result: %s', resp.status_code)
     data = resp.json()
 
     # Extract links from chat logs
@@ -137,7 +135,6 @@ def main(config_path, cache_path, before, after):
             request_url = 'https://www.googleapis.com/gmail/v1/users/me/messages/{0}?'.format(message['id'])
             authorization_header = {'Authorization': 'OAuth %s' % oauth.access_token}
             resp = requests.get(request_url, headers=authorization_header)  # get message data
-            logging.debug('Message query result: %s', resp.status_code)
 
             if resp.status_code == 200:
                 data = json.loads(resp.text)  # requests' json() method seems to have issues handling this response
