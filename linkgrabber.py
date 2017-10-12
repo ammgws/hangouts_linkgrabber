@@ -22,6 +22,7 @@ APP_NAME = 'hangouts_linkgrabber'
 
 
 class LinkParser(HTMLParser):
+    """Used to extract links from Hangouts message body."""
     def __init__(self):
         HTMLParser.__init__(self)
         self.link = []
@@ -82,9 +83,6 @@ def create_dir(ctx, param, directory):
 def main(config_path, cache_path, before, after):
     """Catch up on links sent during the day from a specified Hangouts contact.
     Hangouts messages are parsed through Gmail API.
-
-    OAuth for devices doesn't support Hangouts or Gmail scopes, so have to send auth link through the terminal.
-    https://developers.google.com/identity/protocols/OAuth2ForDevices
     """
     configure_logging(cache_path)
 
@@ -92,7 +90,10 @@ def main(config_path, cache_path, before, after):
     logging.debug('Using config file: %s.', config_file)
     config = ConfigParser()
     config.read(config_file)
-    chat_partner = config.get('Settings', 'chat_partner')  # Name or email of the chat partner to search chat logs for
+
+    # This can be either a (partial) name or e-mail address.
+    chat_partner = config.get('Settings', 'chat_partner')
+
     gmail_client_id = config.get('Gmail', 'client_id')
     gmail_client_secret = config.get('Gmail', 'client_secret')
     gmail_token_file = os.path.join(cache_path, 'gmail_cached_token')
@@ -113,10 +114,10 @@ def main(config_path, cache_path, before, after):
     oauth = GoogleAuth(gmail_client_id, gmail_client_secret, gmail_scopes, gmail_token_file)
     oauth.authenticate()
 
-    # Get email address so we can filter out messages sent by user later on
+    # Get email address so we can filter out messages sent by user later on.
     user = oauth.get_email()
 
-    # Retrieves all Hangouts chat messages received between 'before_time' and 'after_time' on the current day
+    # Retrieves all Hangouts chat messages received between 'before_time' and 'after_time' on the current day.
     logging.debug('Getting emails for: %s', user)
     current_date = dt.datetime.today()
     before_timestamp = int(current_date.replace(hour=before.hour, minute=before.minute).timestamp())
@@ -127,7 +128,8 @@ def main(config_path, cache_path, before, after):
     resp = requests.get(request_url, headers=authorization_header)
     data = resp.json()
 
-    # Extract links from chat logs
+    # Note 'is:chat' is valid as well: https://support.google.com/mail/answer/7190
+    # Extract links from chat logs.
     links = []
     parser = LinkParser()
     if 'messages' in data:
@@ -153,7 +155,7 @@ def main(config_path, cache_path, before, after):
                     link = parser.link
                     links.append(link)
     else:
-        logging.info('No messages found')
+        logging.info('No messages found.')
 
     if links:
         message = 'Links from today:\n' + ' \n'.join(links)
@@ -161,14 +163,14 @@ def main(config_path, cache_path, before, after):
         hangouts = HangoutsClient(hangouts_client_id, hangouts_client_secret, hangouts_token_file)
         if hangouts.connect():
             hangouts.process(block=False)
-            sleep(5)  # need time for Hangouts roster to update
+            sleep(5)  # Need time for Hangouts roster to update.
             hangouts.send_to_all(message)
             hangouts.disconnect(wait=True)
-            logging.info('Finished sending message')
+            logging.info('Finished sending message.')
         else:
             logging.error('Unable to connect to Hangouts.')
     else:
-        logging.info('No new links!')
+        logging.info('No links found.')
 
 
 def configure_logging(log_dir):
