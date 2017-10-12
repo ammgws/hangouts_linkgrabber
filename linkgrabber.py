@@ -80,7 +80,13 @@ def create_dir(ctx, param, directory):
     callback=validate_time, expose_value=True,
     help='"before" time in hhmm format. Default 1730.',
 )
-def main(config_path, cache_path, before, after):
+@click.option(
+    '--include-self',
+    default=False,
+    is_flag=True,
+    help='Set whether or not to include links sent by user.',
+)
+def main(config_path, cache_path, before, after, include_self):
     """Catch up on links sent during the day from a specified Hangouts contact.
     Hangouts messages are parsed through Gmail API.
     """
@@ -129,6 +135,18 @@ def main(config_path, cache_path, before, after):
     data = resp.json()
 
     # Note 'is:chat' is valid as well: https://support.google.com/mail/answer/7190
+    if include_self:
+        query = {'q': f'in:chats from:{chat_partner} OR to:{chat_partner} after:{after_timestamp} before:{before_timestamp}'}
+    else:
+        query = {'q': f'in:chats from:{chat_partner} after:{after_timestamp} before:{before_timestamp}'}
+
+    r = requests.get(
+        base_url,
+        headers=authorization_header,
+        params=query,
+    )
+    data = r.json()
+
     # Extract links from chat logs.
     links = []
     parser = LinkParser()
@@ -153,7 +171,11 @@ def main(config_path, cache_path, before, after):
                 if user not in sender and 'href' in decoded_raw_text:
                     parser.feed(decoded_raw_text)
                     link = parser.link
-                    links.append(link)
+
+                    if include_self:
+                        links.append(link)
+                    elif user not in sender:
+                        links.append(link)
     else:
         logging.info('No messages found.')
 
