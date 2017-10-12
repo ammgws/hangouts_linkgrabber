@@ -128,11 +128,8 @@ def main(config_path, cache_path, before, after, include_self):
     current_date = dt.datetime.today()
     before_timestamp = int(current_date.replace(hour=before.hour, minute=before.minute).timestamp())
     after_timestamp = int(current_date.replace(hour=after.hour, minute=after.minute).timestamp())
-    request_url = 'https://www.googleapis.com/gmail/v1/users/me/messages?q="after:{0} before:{1} from:{2}"'.format(
-        after_timestamp, before_timestamp, chat_partner)
+    base_url = 'https://www.googleapis.com/gmail/v1/users/me/messages'
     authorization_header = {'Authorization': 'OAuth %s' % oauth.access_token}
-    resp = requests.get(request_url, headers=authorization_header)
-    data = resp.json()
 
     # Note 'is:chat' is valid as well: https://support.google.com/mail/answer/7190
     if include_self:
@@ -152,23 +149,15 @@ def main(config_path, cache_path, before, after, include_self):
     parser = LinkParser()
     if 'messages' in data:
         for message in data['messages']:
-            request_url = 'https://www.googleapis.com/gmail/v1/users/me/messages/{0}?'.format(message['id'])
-            authorization_header = {'Authorization': 'OAuth %s' % oauth.access_token}
-            resp = requests.get(request_url, headers=authorization_header)  # get message data
+            request_url = f'{base_url}/{message["id"]}?'
+            r = requests.get(request_url, headers=authorization_header)
 
-            if resp.status_code == 200:
-                data = json.loads(resp.text)  # requests' json() method seems to have issues handling this response
+            if r.status_code == 200:
+                data = json.loads(r.text)  # requests' json() method seems to have issues handling this response
                 sender = data['payload']['headers'][0]['value']
-                # Since the gmail API doesn't appear to support the 'in:chats/is:chat' query anymore,
-                # we end up pulling both emails and chat messages, but the data structures are different so
-                # wrapping this in a try-except as a quick-and-dirty fix to ignore all email messages.
-                try:
-                    decoded_raw_text = base64.urlsafe_b64decode(data['payload']['body']['data']).decode('utf-8')
-                except KeyError:
-                    break
+                decoded_raw_text = base64.urlsafe_b64decode(data['payload']['body']['data']).decode('utf-8')
 
-                # Ignore messages sent by us; we only want links that chat partner has sent.
-                if user not in sender and 'href' in decoded_raw_text:
+                if 'href' in decoded_raw_text:
                     parser.feed(decoded_raw_text)
                     link = parser.link
 
