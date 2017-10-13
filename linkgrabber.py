@@ -165,6 +165,7 @@ def main(config_path, cache_path, before, after, include_self):
 
             sender = data['payload']['headers'][0]['value']
             decoded_raw_text = base64.urlsafe_b64decode(data['payload']['body']['data']).decode('utf-8')
+            msg_time = dt.datetime.fromtimestamp(data['internalDate'])
 
             if 'href' in decoded_raw_text:
                 parser.feed(decoded_raw_text)
