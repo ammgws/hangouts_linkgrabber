@@ -126,16 +126,16 @@ def main(config_path, cache_path, before, after, include_self):
     # Retrieves all Hangouts chat messages received between 'before_time' and 'after_time' on the current day.
     logging.debug('Getting emails for: %s', user)
     current_date = dt.datetime.today()
-    before_timestamp = int(current_date.replace(hour=before.hour, minute=before.minute).timestamp())
-    after_timestamp = int(current_date.replace(hour=after.hour, minute=after.minute).timestamp())
+    before_time = int(current_date.replace(hour=before.hour, minute=before.minute).timestamp())
+    after_time = int(current_date.replace(hour=after.hour, minute=after.minute).timestamp())
     base_url = 'https://www.googleapis.com/gmail/v1/users/me/messages'
     authorization_header = {'Authorization': 'OAuth %s' % oauth.access_token}
 
     # Note 'is:chat' is valid as well: https://support.google.com/mail/answer/7190
     if include_self:
-        query = {'q': f'in:chats from:{chat_partner} OR to:{chat_partner} after:{after_timestamp} before:{before_timestamp}'}
+        query = {'q': f'in:chats from:{chat_partner} OR to:{chat_partner} after:{after_time} before:{before_time}'}
     else:
-        query = {'q': f'in:chats from:{chat_partner} after:{after_timestamp} before:{before_timestamp}'}
+        query = {'q': f'in:chats from:{chat_partner} after:{after_time} before:{before_time}'}
 
     r = requests.get(
         base_url,
