@@ -178,7 +178,7 @@ def main(config_path, cache_path, before, after, include_self):
         logging.info('No messages found.')
 
     if links:
-        message = 'Links from today:\n' + ' \n'.join(links)
+        message = 'Links from today:\n' + ' \n\n'.join(links)
 
         hangouts = HangoutsClient(hangouts_client_id, hangouts_client_secret, hangouts_token_file)
         if hangouts.connect():
