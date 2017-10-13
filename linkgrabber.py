@@ -84,7 +84,13 @@ def create_dir(ctx, param, directory):
     is_flag=True,
     help='Set to include links sent by user in output message.',
 )
-def main(config_path, cache_path, before, after, include_self):
+@click.option(
+    '--show-time',
+    default=False,
+    is_flag=True,
+    help='Set to include time links were sent in output message.',
+)
+def main(config_path, cache_path, before, after, include_self, show_time):
     """Catch up on links sent during the day from a specified Hangouts contact.
     Hangouts messages are parsed through Gmail API.
     """
@@ -163,16 +169,16 @@ def main(config_path, cache_path, before, after, include_self):
             data = r.json()
 
             sender = data['payload']['headers'][0]['value']
-            msg_time = dt.datetime.fromtimestamp(int(data['internalDate'])/1000).strftime("%H:%M:%S")  # Google returns epoch in ms
+            msg_time = dt.datetime.fromtimestamp(int(data['internalDate'])/1000).strftime('%H:%M:%S')  # Google returns epoch in ms
             msg_body = base64.urlsafe_b64decode(data['payload']['body']['data']).decode('utf-8')
 
             if 'href' in msg_body:
                 parser.feed(msg_body)
                 links.extend([
                         {
-                            "link": parser.link,
-                            "sender": sender,
-                            "msg_time": msg_time,
+                            'url': parser.link,
+                            'sender': sender,
+                            'time': msg_time,
                         }])
     else:
         logging.info('No messages found.')
@@ -180,7 +186,23 @@ def main(config_path, cache_path, before, after, include_self):
     s.close()
 
     if links:
-        message = 'Links from today:\n' + ' \n\n'.join(links)
+        # TODO: is there a better way?
+        message_parts = []
+        for link in links:
+            if include_self:
+                link_part = link['url']
+            else:
+                if user not in link['sender']:
+                    link_part = link['url']
+
+            if show_time:
+                time_part = f'[{link["time"]}] '
+            else:
+                time_part = ''
+
+            message_parts.extend([f'{time_part}{link_part}'])
+
+            message = 'Links from today:\n' + ' \n\n'.join(message_parts)
 
         hangouts = HangoutsClient(hangouts_client_id, hangouts_client_secret, hangouts_token_file)
         if hangouts.connect():
