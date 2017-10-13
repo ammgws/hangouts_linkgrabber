@@ -82,7 +82,7 @@ def create_dir(ctx, param, directory):
     '--include-self',
     default=False,
     is_flag=True,
-    help='Set whether or not to include links sent by user.',
+    help='Set to include links sent by user in output message.',
 )
 def main(config_path, cache_path, before, after, include_self):
     """Catch up on links sent during the day from a specified Hangouts contact.
