@@ -135,40 +135,45 @@ def main(config_path, cache_path, before, after, include_self):
 
     # Note 'is:chat' is valid as well: https://support.google.com/mail/answer/7190
     if include_self:
-        query = {'q': f'in:chats from:{chat_partner} OR to:{chat_partner} after:{after_time} before:{before_time}'}
+        params = {'q': f'in:chats from:{chat_partner} OR to:{chat_partner} after:{after_time} before:{before_time}'}
     else:
-        query = {'q': f'in:chats from:{chat_partner} after:{after_time} before:{before_time}'}
+        params = {'q': f'in:chats from:{chat_partner} after:{after_time} before:{before_time}'}
 
     # For response format refer to https://developers.google.com/gmail/api/v1/reference/users/messages/list
-    r = s.get(
-        base_url,
-        headers=authorization_header,
-        params=query,
-    )
-    data = r.json()
+    r = s.get(base_url, params=params)
+    response = r.json()
+
+    messages = []
+    if 'messages' in response:
+        messages.extend(response['messages'])
+
+    while 'nextPageToken' in response:
+        params['pageToken'] = response['nextPageToken']
+        r = s.get(base_url, params=params)
+        response = r.json()
+        messages.extend(response['messages'])
 
     # Extract links from chat logs.
     links = []
     parser = LinkParser()
-    if 'messages' in data:
-        for message in data['messages']:
-            request_url = f'{base_url}/{message["id"]}?'
-            # For response format refer to https://developers.google.com/gmail/api/v1/reference/users/messages
-            r = s.get(request_url, headers=authorization_header)
+    for message in messages:
+        # For response format refer to https://developers.google.com/gmail/api/v1/reference/users/messages
+        request_url = f'{base_url}/{message["id"]}?'
+        r = s.get(request_url, headers=authorization_header)
 
-            if r.status_code == 200:
-                data = json.loads(r.text)  # requests' json() method seems to have issues handling this response
-                sender = data['payload']['headers'][0]['value']
-                decoded_raw_text = base64.urlsafe_b64decode(data['payload']['body']['data']).decode('utf-8')
+        if r.status_code == 200:
+            data = json.loads(r.text)  # requests' json() method seems to have issues handling this response
+            sender = data['payload']['headers'][0]['value']
+            decoded_raw_text = base64.urlsafe_b64decode(data['payload']['body']['data']).decode('utf-8')
 
-                if 'href' in decoded_raw_text:
-                    parser.feed(decoded_raw_text)
-                    link = parser.link
+            if 'href' in decoded_raw_text:
+                parser.feed(decoded_raw_text)
+                link = parser.link
 
-                    if include_self:
-                        links.append(link)
-                    elif user not in sender:
-                        links.append(link)
+                if include_self:
+                    links.append(link)
+                elif user not in sender:
+                    links.append(link)
     else:
         logging.info('No messages found.')
 
