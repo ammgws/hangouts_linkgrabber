@@ -139,6 +139,7 @@ def main(config_path, cache_path, before, after, include_self):
     else:
         query = {'q': f'in:chats from:{chat_partner} after:{after_time} before:{before_time}'}
 
+    # For response format refer to https://developers.google.com/gmail/api/v1/reference/users/messages/list
     r = s.get(
         base_url,
         headers=authorization_header,
@@ -152,6 +153,7 @@ def main(config_path, cache_path, before, after, include_self):
     if 'messages' in data:
         for message in data['messages']:
             request_url = f'{base_url}/{message["id"]}?'
+            # For response format refer to https://developers.google.com/gmail/api/v1/reference/users/messages
             r = s.get(request_url, headers=authorization_header)
 
             if r.status_code == 200:
