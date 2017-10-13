@@ -4,7 +4,6 @@
 # Standard library
 import base64
 import datetime as dt
-import json
 import logging
 import os.path
 from configparser import ConfigParser
@@ -162,7 +161,8 @@ def main(config_path, cache_path, before, after, include_self):
         r = s.get(url)
 
         if r.status_code == 200:
-            data = json.loads(r.text)  # requests' json() method seems to have issues handling this response
+            data = r.json()
+
             sender = data['payload']['headers'][0]['value']
             decoded_raw_text = base64.urlsafe_b64decode(data['payload']['body']['data']).decode('utf-8')
 
