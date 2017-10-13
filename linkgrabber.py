@@ -130,6 +130,8 @@ def main(config_path, cache_path, before, after, include_self):
     after_time = int(current_date.replace(hour=after.hour, minute=after.minute).timestamp())
     base_url = 'https://www.googleapis.com/gmail/v1/users/me/messages'
     authorization_header = {'Authorization': 'OAuth %s' % oauth.access_token}
+    s = requests.Session()
+    s.headers.update(authorization_header)
 
     # Note 'is:chat' is valid as well: https://support.google.com/mail/answer/7190
     if include_self:
@@ -137,7 +139,7 @@ def main(config_path, cache_path, before, after, include_self):
     else:
         query = {'q': f'in:chats from:{chat_partner} after:{after_time} before:{before_time}'}
 
-    r = requests.get(
+    r = s.get(
         base_url,
         headers=authorization_header,
         params=query,
@@ -150,7 +152,7 @@ def main(config_path, cache_path, before, after, include_self):
     if 'messages' in data:
         for message in data['messages']:
             request_url = f'{base_url}/{message["id"]}?'
-            r = requests.get(request_url, headers=authorization_header)
+            r = s.get(request_url, headers=authorization_header)
 
             if r.status_code == 200:
                 data = json.loads(r.text)  # requests' json() method seems to have issues handling this response
