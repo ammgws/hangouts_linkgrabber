@@ -177,6 +177,8 @@ def main(config_path, cache_path, before, after, include_self):
     else:
         logging.info('No messages found.')
 
+    s.close()
+
     if links:
         message = 'Links from today:\n' + ' \n\n'.join(links)
 
