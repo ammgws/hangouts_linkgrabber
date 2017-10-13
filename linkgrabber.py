@@ -159,7 +159,7 @@ def main(config_path, cache_path, before, after, include_self):
     for message in messages:
         # For response format refer to https://developers.google.com/gmail/api/v1/reference/users/messages
         request_url = f'{base_url}/{message["id"]}?'
-        r = s.get(request_url, headers=authorization_header)
+        r = s.get(request_url)
 
         if r.status_code == 200:
             data = json.loads(r.text)  # requests' json() method seems to have issues handling this response
