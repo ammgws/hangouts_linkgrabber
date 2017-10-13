@@ -163,17 +163,17 @@ def main(config_path, cache_path, before, after, include_self):
             data = r.json()
 
             sender = data['payload']['headers'][0]['value']
-            msg_time = dt.datetime.fromtimestamp(data['internalDate'])
+            msg_time = dt.datetime.fromtimestamp(int(data['internalDate'])/1000).strftime("%H:%M:%S")  # Google returns epoch in ms
             msg_body = base64.urlsafe_b64decode(data['payload']['body']['data']).decode('utf-8')
 
             if 'href' in msg_body:
                 parser.feed(msg_body)
-                link = parser.link
-
-                if include_self:
-                    links.append(link)
-                elif user not in sender:
-                    links.append(link)
+                links.extend([
+                        {
+                            "link": parser.link,
+                            "sender": sender,
+                            "msg_time": msg_time,
+                        }])
     else:
         logging.info('No messages found.')
 
