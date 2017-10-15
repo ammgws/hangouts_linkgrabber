@@ -1,6 +1,9 @@
 # hangouts_linkgrabber
 Catch up on links sent during the day from a specified Hangouts contact.
 
+## Why?
+My friend and I often exchange links in our Hangouts chats, but during weekdays at work we may not be able to check the link straight away and forget to follow through when we get home. Thus this script was written so that at the end of the day we will get sent a list of links we sent each other during working hours.
+
 ##### Requirements
 * GMail or Google Apps account which can use Hangouts
 * Python 3.6+
@@ -16,6 +19,38 @@ pip install -r requirements.txt
 
 ##### Usage
 
+##### Run via systemd timer
+Example, once per day at 11.30am:
+
+Create the following user units in `~/.config/systemd/user`
+(may have to create if not existing):
+
+`wynbot.timer`
+```
+[Unit]
+Description=Run linkgrabber once daily
+
+[Timer]
+OnCalendar=*-*-* 18:00:00
+
+[Install]
+WantedBy=timers.target
+```
+
+`linkgrabber.service`
+```
+[Unit]
+Description=Runs hangouts-linkgrabber.
+
+[Service]
+Type=simple
+ExecStart=/path/to/venv/bin/python /path/to/hangouts_linkgrabber/linkgrabber.py
+
+[Install]
+WantedBy=default.target
+```
+Enable with `systemctl --user enable wynbot.timer`
+(note do NOT use sudo)
 
 ##### Run via crontab
 Example, once per day at 6pm:
