@@ -53,7 +53,7 @@ def validate_time(ctx, param, time_str):
         time = dt.datetime.strptime(time_str, '%H%M')
         return time
     except ValueError:
-        raise click.BadParameter('Time should be in HHMM format')
+        raise click.BadParameter(f'Time should be in HHMM format. You gave "{time_str}"')
 
 
 def create_dir(ctx, param, directory):
