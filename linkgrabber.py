@@ -7,6 +7,7 @@ import logging
 import os.path
 from configparser import ConfigParser
 from html.parser import HTMLParser
+from operator import itemgetter
 from pathlib import Path
 from time import sleep
 # Third party
@@ -201,7 +202,7 @@ def main(config_path, cache_path, before, after, include_self, show_time):
     if links:
         # TODO: is there a better way?
         message_parts = []
-        for link in links:
+        for link in sorted(links, key=itemgetter('time')):
             if include_self:
                 link_part = ', '.join(link['url'])
             else:
@@ -214,7 +215,6 @@ def main(config_path, cache_path, before, after, include_self, show_time):
                 time_part = ''
 
             message_parts.extend([f'{time_part}{link_part}'])
-
             message = 'Links from today:\n' + ' \n\n'.join(message_parts)
 
         hangouts = HangoutsClient(hangouts_client_id, hangouts_client_secret, hangouts_token_file)
