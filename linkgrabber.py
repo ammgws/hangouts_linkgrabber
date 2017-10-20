@@ -23,15 +23,26 @@ class LinkParser(HTMLParser):
     """Used to extract links from Hangouts message body."""
     def __init__(self):
         HTMLParser.__init__(self)
-        self.link = []
-        self.last_tag = None
+        self.links = []
+        self.extract = False
 
-    def handle_starttag(self, tag, attr):
-        self.last_tag = tag.lower()
+    def reset(self):
+        self.links = []
+        self.extract = False
+        return super().reset()
+
+    def handle_starttag(self, tag, attrs):
+        attrs = dict(attrs)
+        if tag == 'a' and 'href' in attrs:
+            self.extract = True
 
     def handle_data(self, data):
-        if self.last_tag == 'a' and data.strip():
-            self.link = data
+        if self.extract:
+            self.links.append(data)
+            self.extract = False
+
+    def handle_endtag(self, tag):
+        self.extract = False
 
     def error(self, message):
         pass
@@ -151,35 +162,37 @@ def main(config_path, cache_path, before, after, include_self, show_time):
     if 'messages' in response:
         messages.extend(response['messages'])
 
-    while 'nextPageToken' in response:
-        params['pageToken'] = response['nextPageToken']
-        r = s.get(base_url, params=params)
-        response = r.json()
-        messages.extend(response['messages'])
+        while 'nextPageToken' in response:
+            params['pageToken'] = response['nextPageToken']
+            r = s.get(base_url, params=params)
+            response = r.json()
+            messages.extend(response['messages'])
 
-    # Extract links from chat logs.
-    links = []
-    parser = LinkParser()
-    for message in messages:
-        # For response format refer to https://developers.google.com/gmail/api/v1/reference/users/messages
-        url = f'{base_url}/{message["id"]}?'
-        r = s.get(url)
+        # Extract links from chat logs.
+        links = []
+        parser = LinkParser()
+        for message in messages:
+            # For response format refer to https://developers.google.com/gmail/api/v1/reference/users/messages
+            url = f'{base_url}/{message["id"]}?'
+            r = s.get(url)
 
-        if r.status_code == 200:
-            data = r.json()
+            if r.status_code == 200:
+                data = r.json()
 
-            sender = data['payload']['headers'][0]['value']
-            msg_time = dt.datetime.fromtimestamp(int(data['internalDate'])/1000).strftime('%H:%M:%S')  # Google returns epoch in ms
-            msg_body = base64.urlsafe_b64decode(data['payload']['body']['data']).decode('utf-8')
+                sender = data['payload']['headers'][0]['value']
+                msg_time = dt.datetime.fromtimestamp(int(data['internalDate'])/1000).strftime('%H:%M:%S')  # Google returns epoch in ms
+                msg_body = base64.urlsafe_b64decode(data['payload']['body']['data']).decode('utf-8')
 
-            if 'href' in msg_body:
-                parser.feed(msg_body)
-                links.extend([
-                        {
-                            'url': parser.link,
-                            'sender': sender,
-                            'time': msg_time,
-                        }])
+                if 'href' in msg_body:
+                    parser.feed(msg_body)
+                    links.extend([
+                            {
+                                'url': parser.links,
+                                'sender': sender,
+                                'time': msg_time,
+                            }])
+                    parser.reset()
+        parser.close()
     else:
         logging.info('No messages found.')
 
@@ -190,10 +203,10 @@ def main(config_path, cache_path, before, after, include_self, show_time):
         message_parts = []
         for link in links:
             if include_self:
-                link_part = link['url']
+                link_part = ', '.join(link['url'])
             else:
                 if user not in link['sender']:
-                    link_part = link['url']
+                    link_part = ', '.join(link['url'])
 
             if show_time:
                 time_part = f'[{link["time"]}] '
