@@ -22,16 +22,15 @@ pip install -r requirements.txt
 ##### Run via systemd timer
 Example, once per day at 11.30am:
 
-Create the following user units in `~/.config/systemd/user`
-(may have to create if not existing):
+Create the following user units in `~/.config/systemd/user`:
 
-`wynbot.timer`
+`linkgrabber.timer`
 ```
 [Unit]
-Description=Run linkgrabber once daily
+Description=Run linkgrabber once daily.
 
 [Timer]
-OnCalendar=*-*-* 18:00:00
+OnCalendar=*-*-* 11:30:00
 
 [Install]
 WantedBy=timers.target
@@ -40,7 +39,7 @@ WantedBy=timers.target
 `linkgrabber.service`
 ```
 [Unit]
-Description=Runs hangouts-linkgrabber.
+Description=Run hangouts-linkgrabber.
 
 [Service]
 Type=simple
@@ -49,7 +48,7 @@ ExecStart=/path/to/venv/bin/python /path/to/hangouts_linkgrabber/linkgrabber.py
 [Install]
 WantedBy=default.target
 ```
-Enable with `systemctl --user enable wynbot.timer`
+Enable with `systemctl --user enable linkgrabber.timer`
 (note do NOT use sudo)
 
 ##### Run via crontab
