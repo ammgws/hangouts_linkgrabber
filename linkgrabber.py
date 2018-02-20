@@ -144,7 +144,7 @@ def main(config_path, cache_path, before, after, include_self, show_time):
     current_date = dt.datetime.today()
     before_time = int(current_date.replace(hour=before.hour, minute=before.minute).timestamp())
     after_time = int(current_date.replace(hour=after.hour, minute=after.minute).timestamp())
-    if before_time > after_time:
+    if before_time < after_time:
         before_time = before_time + int(dt.timedelta(days=1).total_seconds())
     base_url = 'https://www.googleapis.com/gmail/v1/users/me/messages'
     authorization_header = {'Authorization': 'OAuth %s' % oauth.access_token}
