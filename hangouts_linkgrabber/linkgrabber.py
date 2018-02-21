@@ -153,7 +153,7 @@ def main(config_path, cache_path, before, after, include_self, show_time):
     user = oauth.get_email()
 
     # Retrieves all Hangouts chat messages received between 'before_time' and 'after_time' on the current day.
-    create_search_args(after, before)
+    after_time, before_time = create_search_args(after, before)
     base_url = 'https://www.googleapis.com/gmail/v1/users/me/messages'
     authorization_header = {'Authorization': 'OAuth %s' % oauth.access_token}
     s = requests.Session()
