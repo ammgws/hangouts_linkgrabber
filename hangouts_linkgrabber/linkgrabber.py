@@ -49,6 +49,19 @@ class LinkParser(HTMLParser):
         pass
 
 
+def create_search_args(datetime_a, datetime_b):
+    current_date = dt.datetime.today()
+    if datetime_a > datetime_b:
+        correction = dt.timedelta(days=1)
+    else:
+        correction = dt.timedelta(days=0)
+
+    datetime_a = current_date.replace(hour=datetime_a.hour, minute=datetime_a.minute) - correction
+    datetime_b = current_date.replace(hour=datetime_b.hour, minute=datetime_b.minute)
+
+    return int(datetime_a.timestamp()), int(datetime_b.timestamp())
+
+
 def validate_time(ctx, param, time_str):
     try:
         time = dt.datetime.strptime(time_str, '%H%M')
@@ -140,12 +153,7 @@ def main(config_path, cache_path, before, after, include_self, show_time):
     user = oauth.get_email()
 
     # Retrieves all Hangouts chat messages received between 'before_time' and 'after_time' on the current day.
-    logging.debug('Getting emails for: %s', user)
-    current_date = dt.datetime.today()
-    before_time = int(current_date.replace(hour=before.hour, minute=before.minute).timestamp())
-    after_time = int(current_date.replace(hour=after.hour, minute=after.minute).timestamp())
-    if before_time < after_time:
-        before_time = before_time + int(dt.timedelta(days=1).total_seconds())
+
     base_url = 'https://www.googleapis.com/gmail/v1/users/me/messages'
     authorization_header = {'Authorization': 'OAuth %s' % oauth.access_token}
     s = requests.Session()
@@ -157,6 +165,7 @@ def main(config_path, cache_path, before, after, include_self, show_time):
     else:
         params = {'q': f'in:chats from:{chat_partner} after:{after_time} before:{before_time}'}
 
+    logging.debug('Getting emails for: %s', user)
     # For response format refer to https://developers.google.com/gmail/api/v1/reference/users/messages/list
     r = s.get(base_url, params=params)
     response = r.json()
