@@ -1,4 +1,5 @@
 click
+hypthesis
 pytest
 requests
 git+git://github.com/ammgws/google_auth.git
