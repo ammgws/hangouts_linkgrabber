@@ -49,23 +49,31 @@ class LinkParser(HTMLParser):
         pass
 
 
-def create_search_args(datetime_a, datetime_b):
+def create_search_args(start_time, end_time):
+    """Generate timestamps to use in GMail search query.
+
+    Input: start_time - time object
+           end_time - time object
+
+    Returns: tuple (start, end) of Unix timestamps in whole seconds.
+
+    """
     current_date = dt.datetime.today()
-    if datetime_a > datetime_b:
+    if start_time >= end_time:
         correction = dt.timedelta(days=1)
     else:
         correction = dt.timedelta(days=0)
 
-    datetime_a = current_date.replace(hour=datetime_a.hour, minute=datetime_a.minute) - correction
-    datetime_b = current_date.replace(hour=datetime_b.hour, minute=datetime_b.minute)
+    start_datetime = current_date.replace(hour=start_time.hour, minute=start_time.minute) - correction
+    end_datetime = current_date.replace(hour=end_time.hour, minute=end_time.minute)
 
-    return int(datetime_a.timestamp()), int(datetime_b.timestamp())
+    return int(start_datetime.timestamp()), int(end_datetime.timestamp())
 
 
 def validate_time(ctx, param, time_str):
     try:
-        time = dt.datetime.strptime(time_str, '%H%M')
-        return time
+        parsed_time = dt.datetime.strptime(time_str, '%H%M')
+        return parsed_time.time()
     except ValueError:
         raise click.BadParameter(f'Time should be in HHMM format. You gave "{time_str}"')
 
@@ -92,30 +100,30 @@ def create_dir(ctx, param, directory):
     help='Path to directory to store logs and such. Defaults to XDG cache dir.',
 )
 @click.option(
-    '--after', '-a',
+    '--start-time',
     default='0830',
     callback=validate_time, expose_value=True,
-    help='"after" time in hhmm format. Default 0830.',
+    help='Start time in 24hr HHMM format. Default 0830.',
 )
 @click.option(
-    '--before', '-b',
+    '--end-time',
     default='1730',
     callback=validate_time, expose_value=True,
-    help='"before" time in hhmm format. Default 1730.',
+    help='End time in 24hr HHMM format. Default 1730.',
 )
 @click.option(
     '--include-self',
     default=False,
     is_flag=True,
-    help='Set to include links sent by user in output message.',
+    help='Set to also include links sent by yourself.',
 )
 @click.option(
     '--show-time',
     default=False,
     is_flag=True,
-    help='Set to include time links were sent in output message.',
+    help='Set to show the time links were sent in output message.',
 )
-def main(config_path, cache_path, before, after, include_self, show_time):
+def main(config_path, cache_path, start_time, end_time, include_self, show_time):
     """Catch up on links sent during the day from a specified Hangouts contact.
     Hangouts messages are parsed through Gmail API.
     """
@@ -153,7 +161,7 @@ def main(config_path, cache_path, before, after, include_self, show_time):
     user = oauth.get_email()
 
     # Retrieves all Hangouts chat messages received between 'before_time' and 'after_time' on the current day.
-    after_time, before_time = create_search_args(after, before)
+    start_timestamp, end_timestamp = create_search_args(start_time, end_time)
     base_url = 'https://www.googleapis.com/gmail/v1/users/me/messages'
     authorization_header = {'Authorization': 'OAuth %s' % oauth.access_token}
     s = requests.Session()
@@ -161,12 +169,12 @@ def main(config_path, cache_path, before, after, include_self, show_time):
 
     # Note 'is:chat' is valid as well: https://support.google.com/mail/answer/7190
     if include_self:
-        params = {'q': f'in:chats from:{chat_partner} OR to:{chat_partner} after:{after_time} before:{before_time}'}
+        params = {'q': f'in:chats from:{chat_partner} OR to:{chat_partner} after:{start_timestamp} before:{end_timestamp}'}
     else:
-        params = {'q': f'in:chats from:{chat_partner} after:{after_time} before:{before_time}'}
+        params = {'q': f'in:chats from:{chat_partner} after:{start_timestamp} before:{end_timestamp}'}
 
-    logging.debug('Getting emails for: %s', user)
     # For response format refer to https://developers.google.com/gmail/api/v1/reference/users/messages/list
+    logging.debug('Getting emails for: %s', user)
     r = s.get(base_url, params=params)
     response = r.json()
 
