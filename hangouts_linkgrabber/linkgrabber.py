@@ -51,7 +51,7 @@ class LinkParser(HTMLParser):
 
 def create_search_args(datetime_a, datetime_b):
     current_date = dt.datetime.today()
-    if datetime_a > datetime_b:
+    if datetime_a >= datetime_b:
         correction = dt.timedelta(days=1)
     else:
         correction = dt.timedelta(days=0)
