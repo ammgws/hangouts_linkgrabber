@@ -6,30 +6,24 @@ My friend and I often exchange links in our Hangouts chats, but during weekdays 
 
 ##### Example
 `linkgrabber.py --start-time 2230 --end-time 0930`
- > Links from today:
-
- > [22:47:03] wwm.org
-
- > [05:40:12] https://i.imgur.com/yarp.gifv
-
- > [09:17:04] http://home.mellicon.com/info/90kg/
+ > Links from today:  
+ > [22:47:03] wwm.org  
+ > [05:40:12] https://i.imgur.com/yarp.gifv  
+ > [09:17:04] http://home.mellicon.com/info/90kg/  
 
 ##### Usage
-Usage: linkgrabber.py [OPTIONS]
-
-  Catch up on links sent during the day from a specified Hangouts contact.
-  Hangouts messages are parsed through Gmail API.
-
-Options:
-  --config-path PATH  Path to directory containing config file.
-                      Defaults to XDG config dir.
-  --cache-path PATH   Path to directory to store logs and OAUTH tokens.
-                      Defaults to XDG cache dir.
-  --start-time TEXT   Start time in 24hr HHMM format. Default 0830.
-  --end-time TEXT     End time in 24hr HHMM format. Default 1730.
-  --include-self      Set to also include links sent by yourself.
-  --show-time         Set to show the time links were sent in output message.
-  --help              Show this message and exit.
+> Usage: linkgrabber.py [OPTIONS]
+>  
+>  Catch up on links sent during the day from a specified Hangouts contact. Hangouts messages are parsed through Gmail API.
+>  
+> Options:  
+>  --config-path PATH  Path to directory containing config file. Defaults to XDG config dir.  
+>  --cache-path PATH   Path to directory to store logs and OAUTH tokens. Defaults to XDG cache dir.  
+>  --start-time TEXT   Start time in 24hr HHMM format. Default 0830.  
+>  --end-time TEXT     End time in 24hr HHMM format. Default 1730.  
+>  --include-self      Set to also include links sent by yourself.  
+>  --show-time         Set to show the time links were sent in output message.  
+>  --help              Show this message and exit.  
 
 ##### Requirements
 * GMail or Google Apps account which can use Hangouts
