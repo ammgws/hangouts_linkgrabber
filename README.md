@@ -58,7 +58,7 @@ WantedBy=timers.target
 `linkgrabber.service`
 ```
 [Unit]
-Description=Run hangouts-linkgrabber.
+Description=Hangouts linkgrabber.
 
 [Service]
 Type=simple
