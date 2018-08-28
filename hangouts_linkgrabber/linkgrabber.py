@@ -174,11 +174,12 @@ def main(config_path, cache_path, start_time, end_time, include_self, show_time)
         params = {'q': f'in:chats from:{chat_partner} after:{start_timestamp} before:{end_timestamp}'}
 
     # For response format refer to https://developers.google.com/gmail/api/v1/reference/users/messages/list
-    logging.debug('Getting emails for: %s', user)
+    logging.debug('Getting emails for: %s between %s and %s', user, dt.datetime.fromtimestamp(start_timestamp), dt.datetime.fromtimestamp(end_timestamp))
     r = s.get(base_url, params=params)
     response = r.json()
 
     messages = []
+    links = []
     if 'messages' in response:
         messages.extend(response['messages'])
 
@@ -189,7 +190,6 @@ def main(config_path, cache_path, start_time, end_time, include_self, show_time)
             messages.extend(response['messages'])
 
         # Extract links from chat logs.
-        links = []
         parser = LinkParser()
         for message in messages:
             # For response format refer to https://developers.google.com/gmail/api/v1/reference/users/messages
