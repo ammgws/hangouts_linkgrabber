@@ -57,8 +57,8 @@ OnCalendar=*-*-* 11:30:00
 WantedBy=timers.target
 ```
 
-`linkgrabber.service`
-```
+linkgrabber.service:
+```ini
 [Unit]
 Description=Hangouts linkgrabber.
 
