@@ -30,9 +30,11 @@ My friend and I often exchange links in our Hangouts chats, but during weekdays 
 * Python 3.6+
 
 ##### Installation
+```sh
 git clone https://github.com/ammgws/hangouts_linkgrabber.git
 cd hangouts_linkgrabber
 pip install -r requirements.txt
+```
 
 ##### Before Use
 1. Go to [Google APIs](https://console.developers.google.com/apis/) and generate secret client ID/password.
@@ -43,8 +45,8 @@ Example, once per day at 11.30am:
 
 Create the following user units in `~/.config/systemd/user`:
 
-`linkgrabber.timer`
-```
+linkgrabber.timer:
+```ini
 [Unit]
 Description=Run linkgrabber once daily.
 
